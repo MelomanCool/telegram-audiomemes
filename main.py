@@ -7,10 +7,11 @@ from itertools import islice
 from telegram import Update, Message, Bot, ParseMode, InlineQueryResultCachedVoice
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, InlineQueryHandler
 
-from config import TOKEN
+from config import TOKEN, ADMINS
 from contexts import get_user_context
 from converter import convert_to_ogg
 from model import MemeStorage, Meme
+from utils import restricted
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -185,6 +186,12 @@ def error_handler(bot, update, error):
     logger.warning('Update "%s" caused error "%s"', update, error)
 
 
+@restricted(ADMINS)
+def cmd_extract(bot, update):
+    for meme in meme_storage.get_all():
+        update.message.reply_voice(meme.file_id, caption=meme.name, quote=False)
+
+
 def main():
     updater = Updater(TOKEN)
 
@@ -206,6 +213,7 @@ def main():
     dp.add_handler(CommandHandler('name', cmd_name))
     dp.add_handler(CommandHandler('delete', cmd_delete))
     dp.add_handler(CommandHandler('rename', cmd_rename, pass_args=True))
+    dp.add_handler(CommandHandler('extract', cmd_extract))
     dp.add_handler(InlineQueryHandler(inlinequery))
 
     dp.add_error_handler(error_handler)
