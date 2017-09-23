@@ -18,7 +18,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-AUDIO, NAME = range(2)
+NAME = 1
 
 meme_storage = MemeStorage('memes')
 
@@ -27,12 +27,6 @@ def cmd_cancel(bot, update):
     update.message.reply_text('Current operation has been canceled.')
 
     return ConversationHandler.END
-
-
-def cmd_add(bot, update):
-    update.message.reply_text('Okay, send me an audio.')
-
-    return AUDIO
 
 
 def audio_handler(bot: Bot, update: Update):
