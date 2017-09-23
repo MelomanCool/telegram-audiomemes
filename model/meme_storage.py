@@ -49,9 +49,11 @@ class MemeStorage(object):
         ]
 
     def new_find(self, search_query):
-        scored_matches = process.extract(search_query, self.get_all(),
-                                         key=lambda meme: meme.name,
-                                         scorer=fuzz.token_set_ratio)
+        scored_matches = process.extractBests(search_query, self.get_all(),
+                                              key=lambda meme: meme.name,
+                                              scorer=fuzz.token_set_ratio,
+                                              limit=None,
+                                              score_cutoff=60)
         matches, _ = zip(*scored_matches)
         return matches
 
