@@ -4,13 +4,13 @@ A Telegram bot that lets you send audio memes.
 
 ## Usage
 Search using [inline mode](https://core.telegram.org/bots/inline).  
-To get the name of a meme, reply to it with __name__ command.
+To get the name of a meme, reply to it with __/name__ command.
 
 Manage memes using following commands:
-* __add__ – add a meme
-* __cancel__ – cancel adding
-* __rename__ – rename the meme (use replying to the meme)
-* __delete__ – delete the meme (use replying to the meme)
+* send an audio to bot to add a meme
+* __/cancel__ – cancel adding
+* __/rename__ – rename the meme (use replying to the meme)
+* __/delete__ – delete the meme (use replying to the meme)
 
 (you can rename or delete only memes you've created yourself)
 
