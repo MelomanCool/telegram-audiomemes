@@ -191,11 +191,9 @@ def main():
     dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('add', cmd_add)],
+        entry_points=[MessageHandler(Filters.audio | Filters.voice | Filters.document, audio_handler)],
 
         states={
-            AUDIO: [MessageHandler(Filters.audio | Filters.voice | Filters.document, audio_handler)],
-
             NAME: [MessageHandler(Filters.text, name_handler)]
         },
 
