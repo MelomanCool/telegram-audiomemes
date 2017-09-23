@@ -54,6 +54,10 @@ class MemeStorage(object):
                                               scorer=fuzz.token_set_ratio,
                                               limit=None,
                                               score_cutoff=30)
+
+        if not scored_matches:
+            return []
+
         matches, _ = zip(*scored_matches)
         return matches
 
