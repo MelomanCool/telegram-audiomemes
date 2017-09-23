@@ -2,15 +2,17 @@
 A Telegram bot that lets you send audio memes.
 
 
-## Commands
-The bot is supporting following commands:
+## Usage
+Search using [inline mode](https://core.telegram.org/bots/inline).  
+To get the name of a meme, reply to it with __name__ command.
+
+Manage memes using following commands:
 * __add__ – add a meme
 * __cancel__ – cancel adding
-* __name__ – get the name of the meme (use replying to the meme)
 * __rename__ – rename the meme (use replying to the meme)
 * __delete__ – delete the meme (use replying to the meme)
 
-You can rename or delete only memes you've created yourself.
+(you can rename or delete only memes you've created yourself)
 
 
 ## Requirements
@@ -26,7 +28,7 @@ After cloning the repo, you can install requirements with pip:
 `pip3 install -r requirements.txt`
 
 
-## Usage
+## Running the bot
 
 1. Clone this repository:  
    `git clone https://github.com/MelomanCool/telegram-audiomemes.git`
