@@ -48,6 +48,9 @@ class MemeStorage(object):
             if any(keyword in meme.name.lower() for keyword in keywords)
         ]
 
+    def __contains__(self, item):
+        return item in self.memes
+
     def new_find(self, search_query):
         scored_matches = process.extractBests(search_query, self.get_all(),
                                               key=lambda meme: meme.name,

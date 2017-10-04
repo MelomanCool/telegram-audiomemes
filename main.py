@@ -29,10 +29,20 @@ def cmd_cancel(bot, update):
     return ConversationHandler.END
 
 
+# TODO: separate voice and other types handling into different handlers
 def audio_handler(bot: Bot, update: Update):
     message = update.message  # type: Message
 
-    if message.audio is not None:
+    if message.voice is not None:
+        file_id = message.voice.file_id
+
+        if file_id in meme_storage:
+            meme = meme_storage.get(file_id)
+            message.reply_text('Name: "{}"'.format(meme.name))
+
+            return ConversationHandler.END
+
+    elif message.audio is not None:
         message.reply_text('Converting audio to voice...', quote=False)
 
         audio_info = bot.get_file(message.audio.file_id)
@@ -56,11 +66,8 @@ def audio_handler(bot: Bot, update: Update):
         response = message.reply_voice(voice_file, quote=False)
         file_id = response.voice.file_id
 
-    elif message.voice is not None:
-        file_id = message.voice.file_id
-
     else:
-        message.reply_text('An error occured.')
+        message.reply_text('Sorry, the type of sent file is not supported.')
         raise ValueError('Message does not contain Audio or Voice.')
 
     context = get_user_context(message.from_user.id)
