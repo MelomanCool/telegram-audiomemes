@@ -20,7 +20,7 @@ Manage memes using following commands:
 The code has been tested only on Python 3.4.
 
 This bot uses following packages:
-* `python_telegram_bot` – Telegram API wrapper.
+* `python-telegram-bot` – Telegram API wrapper.
 * `fuzzywuzzy` – for meme searching.
 * `pydub` – for converting `Audio` (mp3) to `Voice` (ogg) objects.
 
