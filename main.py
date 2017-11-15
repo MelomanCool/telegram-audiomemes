@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from uuid import uuid4
 from itertools import islice
 
@@ -7,7 +6,6 @@ from telegram import Update, Message, Bot, ParseMode, InlineQueryResultCachedVoi
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, InlineQueryHandler
 
 from config import TOKEN
-from contexts import get_user_context
 from converter import convert_to_ogg
 from model import MemeStorage, Meme
 from utils import download_file
@@ -39,7 +37,7 @@ def meme_handler(bot, update):
     update.message.reply_text('Name: "{}"'.format(meme.name))
 
 
-def audio_handler(bot: Bot, update: Update):
+def audio_handler(bot: Bot, update: Update, user_data):
     message = update.message  # type: Message
 
     if message.voice is not None:
@@ -55,19 +53,17 @@ def audio_handler(bot: Bot, update: Update):
         response = message.reply_voice(meme_file, quote=False)  # type: Message
         meme_file_id = response.voice.file_id
 
-    context = get_user_context(message.from_user.id)
-    context['meme_file_id'] = meme_file_id
+    user_data['meme_file_id'] = meme_file_id
     message.reply_text('Okay, now send me the name for the meme.')
 
     return NAME
 
 
-def name_handler(bot: Bot, update: Update):
+def name_handler(bot: Bot, update: Update, user_data):
     message = update.message
 
     meme_name = message.text.strip()
-    context = get_user_context(message.from_user.id)
-    file_id = context['meme_file_id']
+    file_id = user_data['meme_file_id']
 
     meme = Meme(
         name=meme_name,
@@ -179,11 +175,16 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[MessageHandler(
             ~is_meme & (Filters.audio | Filters.voice | is_audio_document),
-            audio_handler
+            audio_handler,
+            pass_user_data=True
         )],
 
         states={
-            NAME: [MessageHandler(Filters.text, name_handler)]
+            NAME: [MessageHandler(
+                Filters.text,
+                name_handler,
+                pass_user_data=True
+            )]
         },
 
         fallbacks=[CommandHandler('cancel', cmd_cancel)]
