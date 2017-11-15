@@ -1,5 +1,4 @@
 import logging
-from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
 from itertools import islice
@@ -11,6 +10,8 @@ from config import TOKEN
 from contexts import get_user_context
 from converter import convert_to_ogg
 from model import MemeStorage, Meme
+from utils import download_file
+from custom_filters import IsMeme, IsAudioDocument
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -22,6 +23,9 @@ NAME = 1
 
 meme_storage = MemeStorage('memes')
 
+is_meme = IsMeme(meme_storage)
+is_audio_document = IsAudioDocument()
+
 
 def cmd_cancel(bot, update):
     update.message.reply_text('Current operation has been canceled.')
@@ -29,49 +33,30 @@ def cmd_cancel(bot, update):
     return ConversationHandler.END
 
 
-# TODO: separate voice and other types handling into different handlers
+def meme_handler(bot, update):
+    """Handles known memes, returns their names"""
+    meme = meme_storage.get(update.message.voice.file_id)
+    update.message.reply_text('Name: "{}"'.format(meme.name))
+
+
 def audio_handler(bot: Bot, update: Update):
     message = update.message  # type: Message
 
     if message.voice is not None:
-        file_id = message.voice.file_id
-
-        if file_id in meme_storage:
-            meme = meme_storage.get(file_id)
-            message.reply_text('Name: "{}"'.format(meme.name))
-
-            return ConversationHandler.END
-
-    elif message.audio is not None:
-        message.reply_text('Converting audio to voice...', quote=False)
-
-        audio_info = bot.get_file(message.audio.file_id)
-        audio_file = BytesIO()
-        audio_info.download(out=audio_file)
-        audio_file.seek(0)
-
-        voice_file = convert_to_ogg(audio_file)
-        response = message.reply_voice(voice_file, quote=False)  # type: Message
-        file_id = response.voice.file_id
-
-    elif message.document is not None and Path(message.document.file_name).suffix in ('.mp3', '.ogg'):
-        message.reply_text('Converting document to voice...', quote=False)
-
-        doc_info = bot.get_file(message.document.file_id)
-        doc_file = BytesIO()
-        doc_info.download(out=doc_file)
-        doc_file.seek(0)
-
-        voice_file = convert_to_ogg(doc_file)
-        response = message.reply_voice(voice_file, quote=False)
-        file_id = response.voice.file_id
+        meme_file_id = message.voice.file_id
 
     else:
-        message.reply_text('Sorry, the type of sent file is not supported.')
-        raise ValueError('Message does not contain Audio or Voice.')
+        message.reply_text('Converting to voice...', quote=False)
+
+        audio = message.audio or message.document
+        audio_file = download_file(bot, audio.file_id)
+        meme_file = convert_to_ogg(audio_file)
+
+        response = message.reply_voice(meme_file, quote=False)  # type: Message
+        meme_file_id = response.voice.file_id
 
     context = get_user_context(message.from_user.id)
-    context['meme_file_id'] = file_id
+    context['meme_file_id'] = meme_file_id
     message.reply_text('Okay, now send me the name for the meme.')
 
     return NAME
@@ -192,7 +177,10 @@ def main():
     dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(Filters.audio | Filters.voice | Filters.document, audio_handler)],
+        entry_points=[MessageHandler(
+            ~is_meme & (Filters.audio | Filters.voice | is_audio_document),
+            audio_handler
+        )],
 
         states={
             NAME: [MessageHandler(Filters.text, name_handler)]
@@ -202,6 +190,7 @@ def main():
     )
 
     dp.add_handler(conv_handler)
+    dp.add_handler(MessageHandler(is_meme, meme_handler))
     dp.add_handler(CommandHandler('name', cmd_name))
     dp.add_handler(CommandHandler('delete', cmd_delete))
     dp.add_handler(CommandHandler('rename', cmd_rename, pass_args=True))
