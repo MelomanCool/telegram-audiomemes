@@ -29,8 +29,6 @@ class MemeStorage(object):
         self.memes.sync()
 
     def rename(self, meme, new_name):
-        assert meme.file_id in self.memes
-
         self.delete(meme)
         self.add(Meme(
             name=new_name,
@@ -48,8 +46,8 @@ class MemeStorage(object):
             if any(keyword in meme.name.lower() for keyword in keywords)
         ]
 
-    def __contains__(self, item):
-        return item in self.memes
+    def __contains__(self, file_id):
+        return file_id in self.memes
 
     def new_find(self, search_query):
         scored_matches = process.extractBests(search_query, self.get_all(),
