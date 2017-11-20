@@ -40,20 +40,10 @@ class MemeStorage(object):
             owner_id=meme.owner_id
         ))
 
-    def find(self, keywords):
-        keywords = [word.lower() for word in keywords]
-
-        logger.debug('Searching with keywords: %s', keywords)
-
-        return [
-            meme for meme in self.memes.values()
-            if any(keyword in meme.name.lower() for keyword in keywords)
-        ]
-
     def __contains__(self, file_id):
         return file_id in self.memes
 
-    def new_find(self, search_query):
+    def find(self, search_query):
         scored_matches = process.extractBests(search_query, self.get_all(),
                                               key=lambda meme: meme.name,
                                               scorer=fuzz.token_set_ratio,

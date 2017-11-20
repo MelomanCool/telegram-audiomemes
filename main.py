@@ -177,7 +177,7 @@ def inlinequery(bot, update):
     logger.info('Inline query: %s', query)
 
     if query:
-        memes = meme_storage.new_find(query)
+        memes = meme_storage.find(query)
     else:
         memes = meme_storage.get_all()
 
