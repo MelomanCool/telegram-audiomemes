@@ -39,19 +39,19 @@ def meme_handler(bot, update):
 
 
 def audio_handler(bot: Bot, update: Update, user_data):
-    message = update.message  # type: Message
+    message = update.message
 
     if message.voice is not None:
         meme_file_id = message.voice.file_id
 
     else:
-        message.reply_text('Converting to voice...', quote=False)
+        message.reply_text('Converting to voice...')
 
         audio = message.audio or message.document
         audio_file = download_file(bot, audio.file_id)
         meme_file = convert_to_ogg(audio_file)
 
-        response = message.reply_voice(meme_file, quote=False)  # type: Message
+        response = message.reply_voice(meme_file)
         meme_file_id = response.voice.file_id
 
     user_data['meme_file_id'] = meme_file_id
@@ -82,15 +82,15 @@ def name_handler(bot: Bot, update: Update, user_data):
 def cmd_name(bot, update, quoted_voice_id):
     """Returns the name of a meme"""
 
-    message = update.message  # type: Message
+    message = update.message
 
     try:
         meme = meme_storage.get(quoted_voice_id)
     except KeyError:
-        message.reply_text("I don't know that meme, sorry.", quote=False)
+        message.reply_text("I don't know that meme, sorry.")
         return
 
-    message.reply_text(meme.name, quote=False)
+    message.reply_text(meme.name)
 
 
 @inject_quoted_voice_id
@@ -100,18 +100,76 @@ def cmd_delete(bot, update, quoted_voice_id):
     message = update.message
 
     try:
+        meme_name = meme_storage.get(quoted_voice_id).name
+    except KeyError:
+        message.reply_text("I don't know that meme, sorry.")
+        return
+
+    try:
+        meme_storage.delete(quoted_voice_id, message.from_user.id)
+    except Unauthorized:
+        message.reply_text("Sorry, you can only delete the memes you added yourself.")
+        return
+
+    message.reply_text('The meme "{name}" has been deleted.'.format(name=meme_name))
+
+
+@inject_quoted_voice_id
+def cmd_rename(bot, update, args, quoted_voice_id):
+    """Changes the name of the meme"""
+
+    message = update.message
+    new_name = ' '.join(args)
+
+    if not new_name:
+        message.reply_text('Usage: /rename <i>new name</i>',
+                           parse_mode=ParseMode.HTML)
+        return
+
+    try:
         meme = meme_storage.get(quoted_voice_id)
     except KeyError:
-        message.reply_text("I don't know that meme, sorry.", quote=False)
+        message.reply_text("Sorry, I don't know that meme.")
+        return
+
+    try:
+        meme_storage.rename(meme, new_name, message.from_user.id)
+    except Unauthorized:
+        message.reply_text("Sorry, you can only rename the memes you added yourself.")
+        return
+
+    message.reply_text('The meme has been renamed to "{}"'.format(new_name))
+
+
+@inject_quoted_voice_id
+def cmd_fix(bot, update, quoted_voice_id):
+    """Fixes meme's playback on Android"""
+
+    message = update.message
+
+    try:
+        meme = meme_storage.get(quoted_voice_id)
+    except KeyError:
+        message.reply_text("Sorry, I don't know that meme.")
         return
 
     try:
         meme_storage.delete(meme, message.from_user.id)
     except Unauthorized:
-        message.reply_text("Sorry, you can only delete the memes you added yourself.", quote=False)
+        message.reply_text("Sorry, you can only fix the memes you added yourself.")
         return
 
-    message.reply_text('The meme "{name}" has been deleted.'.format(name=meme.name), quote=False)
+    audio_file = download_file(bot, quoted_voice_id)
+    fixed_file = convert_to_ogg(audio_file)
+    response = message.reply_voice(fixed_file)
+    fixed_file_id = response.voice.file_id
+    meme_storage.add(Meme(
+        name=meme.name,
+        file_id=fixed_file_id,
+        owner_id=meme.owner_id
+    ))
+
+    message.reply_text('The meme has been fixed')
 
 
 def inlinequery(bot, update):
@@ -130,64 +188,6 @@ def inlinequery(bot, update):
     ]
 
     update.inline_query.answer(results, cache_time=0)
-
-
-@inject_quoted_voice_id
-def cmd_rename(bot, update, args, quoted_voice_id):
-    """Changes the name of the meme"""
-
-    message = update.message
-    new_name = ' '.join(args)
-
-    if not new_name:
-        message.reply_text('Usage: /rename <i>new name</i>',
-                           parse_mode=ParseMode.HTML)
-        return
-
-    try:
-        meme = meme_storage.get(quoted_voice_id)
-    except KeyError:
-        message.reply_text("Sorry, I don't know that meme.", quote=False)
-        return
-
-    try:
-        meme_storage.rename(meme, new_name, message.from_user.id)
-    except Unauthorized:
-        message.reply_text("Sorry, you can only rename the memes you added yourself.", quote=False)
-        return
-
-    message.reply_text('The meme has been renamed to "{}"'.format(new_name))
-
-
-@inject_quoted_voice_id
-def cmd_fix(bot, update, quoted_voice_id):
-    """Fixes meme's playback on Android"""
-
-    message = update.message
-
-    try:
-        meme = meme_storage.get(quoted_voice_id)
-    except KeyError:
-        message.reply_text("Sorry, I don't know that meme.", quote=False)
-        return
-
-    try:
-        meme_storage.delete(meme, message.from_user.id)
-    except Unauthorized:
-        message.reply_text("Sorry, you can only fix the memes you added yourself.", quote=False)
-        return
-
-    audio_file = download_file(bot, quoted_voice_id)
-    fixed_file = convert_to_ogg(audio_file)
-    response = message.reply_voice(fixed_file, quote=False)  # type: Message
-    fixed_file_id = response.voice.file_id
-    meme_storage.add(Meme(
-        name=meme.name,
-        file_id=fixed_file_id,
-        owner_id=meme.owner_id
-    ))
-
-    message.reply_text('The meme has been fixed')
 
 
 def error_handler(bot, update, error):
