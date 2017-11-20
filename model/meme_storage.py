@@ -4,6 +4,7 @@ import logging
 from fuzzywuzzy import fuzz, process
 
 from .meme import Meme
+from .exceptions import Unauthorized
 
 
 logger = logging.getLogger(__name__)
@@ -18,18 +19,21 @@ class MemeStorage(object):
         self.memes[new_meme.file_id] = new_meme
         self.memes.sync()
 
-    def delete(self, meme):
+    def delete(self, meme, from_user_id):
         """Delete a meme by id or a Meme object"""
         if isinstance(meme, Meme):
             file_id = meme.file_id
         else:
             file_id = meme
 
+        if from_user_id != self.memes[file_id].owner_id:
+            raise Unauthorized
+
         del self.memes[file_id]
         self.memes.sync()
 
-    def rename(self, meme, new_name):
-        self.delete(meme)
+    def rename(self, meme, new_name, from_user_id):
+        self.delete(meme, from_user_id)
         self.add(Meme(
             name=new_name,
             file_id=meme.file_id,

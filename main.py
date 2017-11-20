@@ -8,6 +8,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Conve
 from config import TOKEN
 from converter import convert_to_ogg
 from model import MemeStorage, Meme
+from model.exceptions import Unauthorized
 from utils import download_file
 from custom_filters import IsMeme, IsAudioDocument
 
@@ -112,10 +113,12 @@ def cmd_delete(bot, update):
         message.reply_text("I don't know that meme, sorry.", quote=False)
         return
 
-    if meme.owner_id != message.from_user.id:
+    try:
+        meme_storage.delete(meme, message.from_user.id)
+    except Unauthorized:
         message.reply_text("Sorry, you can only delete the memes you added yourself.", quote=False)
+        return
 
-    meme_storage.delete(meme)
     message.reply_text('The meme "{name}" has been deleted.'.format(name=meme.name), quote=False)
 
 
@@ -159,7 +162,12 @@ def cmd_rename(bot, update, args):
         message.reply_text("Sorry, I don't know that meme.", quote=False)
         return
 
-    meme_storage.rename(meme, new_name)
+    try:
+        meme_storage.rename(meme, new_name, message.from_user.id)
+    except Unauthorized:
+        message.reply_text("Sorry, you can only rename the memes you added yourself.", quote=False)
+        return
+
     message.reply_text('The meme has been renamed to "{}"'.format(new_name))
 
 
