@@ -9,7 +9,7 @@ from config import TOKEN
 from converter import convert_to_ogg
 from model import MemeStorage, Meme
 from model.exceptions import Unauthorized
-from utils import download_file
+from utils import download_file, requires_quoted_meme
 from custom_filters import IsMeme, IsAudioDocument
 
 
@@ -78,15 +78,12 @@ def name_handler(bot: Bot, update: Update, user_data):
     return ConversationHandler.END
 
 
+@requires_quoted_meme
 def cmd_name(bot, update):
     """Returns the name of a meme"""
 
     message = update.message  # type: Message
     quoted_message = message.reply_to_message  # type: Message
-
-    if not quoted_message or not quoted_message.voice:
-        message.reply_text('You should reply to a meme with this command.')
-        return
 
     try:
         meme = meme_storage.get(quoted_message.voice.file_id)
@@ -97,15 +94,12 @@ def cmd_name(bot, update):
     message.reply_text(meme.name, quote=False)
 
 
+@requires_quoted_meme
 def cmd_delete(bot, update):
     """Deletes a meme by voice file"""
 
     message = update.message
     quoted_message = message.reply_to_message
-
-    if not quoted_message or not quoted_message.voice:
-        message.reply_text('You should reply to a meme with this command.')
-        return
 
     try:
         meme = meme_storage.get(quoted_message.voice.file_id)
@@ -140,6 +134,7 @@ def inlinequery(bot, update):
     update.inline_query.answer(results, cache_time=0)
 
 
+@requires_quoted_meme
 def cmd_rename(bot, update, args):
     """Changes the name of the meme"""
 
@@ -150,10 +145,6 @@ def cmd_rename(bot, update, args):
     if not new_name:
         message.reply_text('Usage: /rename <i>new name</i>',
                            parse_mode=ParseMode.HTML)
-        return
-
-    if not quoted_message or not quoted_message.voice:
-        message.reply_text('You should reply to a meme with this command.', quote=False)
         return
 
     try:
