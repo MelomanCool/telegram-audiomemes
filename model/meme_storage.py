@@ -33,7 +33,7 @@ class MemeStorage(object):
         self.add(Meme(
             name=new_name,
             file_id=meme.file_id,
-            owner=meme.owner
+            owner_id=meme.owner_id
         ))
 
     def find(self, keywords):

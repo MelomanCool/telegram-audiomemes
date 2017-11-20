@@ -68,7 +68,7 @@ def name_handler(bot: Bot, update: Update, user_data):
     meme = Meme(
         name=meme_name,
         file_id=file_id,
-        owner=message.from_user.id
+        owner_id=message.from_user.id
     )
 
     meme_storage.add(meme)
@@ -112,7 +112,7 @@ def cmd_delete(bot, update):
         message.reply_text("I don't know that meme, sorry.", quote=False)
         return
 
-    if meme.owner != message.from_user.id:
+    if meme.owner_id != message.from_user.id:
         message.reply_text("Sorry, you can only delete the memes you added yourself.", quote=False)
 
     meme_storage.delete(meme)
