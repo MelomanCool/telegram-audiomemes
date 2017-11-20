@@ -162,6 +162,38 @@ def cmd_rename(bot, update, args):
     message.reply_text('The meme has been renamed to "{}"'.format(new_name))
 
 
+@requires_quoted_meme
+def cmd_fix(bot, update):
+    """Fixes meme's playback on Android"""
+
+    message = update.message
+    quoted_message = message.reply_to_message
+
+    try:
+        meme = meme_storage.get(quoted_message.voice.file_id)
+    except KeyError:
+        message.reply_text("Sorry, I don't know that meme.", quote=False)
+        return
+
+    try:
+        meme_storage.delete(meme, message.from_user.id)
+    except Unauthorized:
+        message.reply_text("Sorry, you can only fix the memes you added yourself.", quote=False)
+        return
+
+    audio_file = download_file(bot, quoted_message.voice.file_id)
+    fixed_file = convert_to_ogg(audio_file)
+    response = message.reply_voice(fixed_file, quote=False)  # type: Message
+    fixed_file_id = response.voice.file_id
+    meme_storage.add(Meme(
+        name=meme.name,
+        file_id=fixed_file_id,
+        owner_id=meme.owner_id
+    ))
+
+    message.reply_text('The meme has been fixed')
+
+
 def error_handler(bot, update, error):
     logger.warning('Update "%s" caused error "%s"', update, error)
 
@@ -194,6 +226,7 @@ def main():
     dp.add_handler(CommandHandler('name', cmd_name))
     dp.add_handler(CommandHandler('delete', cmd_delete))
     dp.add_handler(CommandHandler('rename', cmd_rename, pass_args=True))
+    dp.add_handler(CommandHandler('fix', cmd_fix))
     dp.add_handler(InlineQueryHandler(inlinequery))
 
     dp.add_error_handler(error_handler)
