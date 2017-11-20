@@ -9,7 +9,7 @@ from config import TOKEN
 from converter import convert_to_ogg
 from model import MemeStorage, Meme
 from model.exceptions import Unauthorized
-from utils import download_file, requires_quoted_meme
+from utils import download_file, inject_quoted_voice_id
 from custom_filters import IsMeme, IsAudioDocument
 
 
@@ -78,15 +78,14 @@ def name_handler(bot: Bot, update: Update, user_data):
     return ConversationHandler.END
 
 
-@requires_quoted_meme
-def cmd_name(bot, update):
+@inject_quoted_voice_id
+def cmd_name(bot, update, quoted_voice_id):
     """Returns the name of a meme"""
 
     message = update.message  # type: Message
-    quoted_message = message.reply_to_message  # type: Message
 
     try:
-        meme = meme_storage.get(quoted_message.voice.file_id)
+        meme = meme_storage.get(quoted_voice_id)
     except KeyError:
         message.reply_text("I don't know that meme, sorry.", quote=False)
         return
@@ -94,15 +93,14 @@ def cmd_name(bot, update):
     message.reply_text(meme.name, quote=False)
 
 
-@requires_quoted_meme
-def cmd_delete(bot, update):
+@inject_quoted_voice_id
+def cmd_delete(bot, update, quoted_voice_id):
     """Deletes a meme by voice file"""
 
     message = update.message
-    quoted_message = message.reply_to_message
 
     try:
-        meme = meme_storage.get(quoted_message.voice.file_id)
+        meme = meme_storage.get(quoted_voice_id)
     except KeyError:
         message.reply_text("I don't know that meme, sorry.", quote=False)
         return
@@ -134,12 +132,11 @@ def inlinequery(bot, update):
     update.inline_query.answer(results, cache_time=0)
 
 
-@requires_quoted_meme
-def cmd_rename(bot, update, args):
+@inject_quoted_voice_id
+def cmd_rename(bot, update, args, quoted_voice_id):
     """Changes the name of the meme"""
 
     message = update.message
-    quoted_message = message.reply_to_message
     new_name = ' '.join(args)
 
     if not new_name:
@@ -148,7 +145,7 @@ def cmd_rename(bot, update, args):
         return
 
     try:
-        meme = meme_storage.get(quoted_message.voice.file_id)
+        meme = meme_storage.get(quoted_voice_id)
     except KeyError:
         message.reply_text("Sorry, I don't know that meme.", quote=False)
         return
@@ -162,15 +159,14 @@ def cmd_rename(bot, update, args):
     message.reply_text('The meme has been renamed to "{}"'.format(new_name))
 
 
-@requires_quoted_meme
-def cmd_fix(bot, update):
+@inject_quoted_voice_id
+def cmd_fix(bot, update, quoted_voice_id):
     """Fixes meme's playback on Android"""
 
     message = update.message
-    quoted_message = message.reply_to_message
 
     try:
-        meme = meme_storage.get(quoted_message.voice.file_id)
+        meme = meme_storage.get(quoted_voice_id)
     except KeyError:
         message.reply_text("Sorry, I don't know that meme.", quote=False)
         return
@@ -181,7 +177,7 @@ def cmd_fix(bot, update):
         message.reply_text("Sorry, you can only fix the memes you added yourself.", quote=False)
         return
 
-    audio_file = download_file(bot, quoted_message.voice.file_id)
+    audio_file = download_file(bot, quoted_voice_id)
     fixed_file = convert_to_ogg(audio_file)
     response = message.reply_voice(fixed_file, quote=False)  # type: Message
     fixed_file_id = response.voice.file_id

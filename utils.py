@@ -10,12 +10,12 @@ def download_file(bot, file_id):
     return f
 
 
-def requires_quoted_meme(func):
+def inject_quoted_voice_id(func):
     @wraps(func)
     def wrapped(bot, update, *args, **kwargs):
         quoted_message = update.message.reply_to_message
         if not quoted_message or not quoted_message.voice:
             update.message.reply_text('You should reply to a meme with this command.')
             return
-        return func(bot, update, *args, **kwargs)
+        return func(bot, update, *args, quoted_voice_id=quoted_message.voice.file_id, **kwargs)
     return wrapped
