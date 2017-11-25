@@ -46,15 +46,15 @@ class MemeStorage(object):
     def find(self, search_query):
         scored_matches = process.extractBests(search_query, self.get_all(),
                                               key=lambda meme: meme.name,
-                                              scorer=fuzz.token_set_ratio,
+                                              scorer=fuzz.UWRatio,
                                               limit=None,
-                                              score_cutoff=30)
+                                              score_cutoff=55)
 
-        if not scored_matches:
+        if scored_matches:
+            matches, _ = zip(*scored_matches)
+            return matches
+        else:
             return []
-
-        matches, _ = zip(*scored_matches)
-        return matches
 
     def get(self, file_id):
         """Get a meme by it's file_id"""
