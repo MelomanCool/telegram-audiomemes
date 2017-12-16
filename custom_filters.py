@@ -8,7 +8,7 @@ class IsMeme(BaseFilter):
 
     def filter(self, message):
         return (message.voice is not None
-                and message.voice.file_id in self.storage)
+                and self.storage.has_meme_with_file_id(message.voice.file_id))
 
 
 class IsAudioDocument(BaseFilter):

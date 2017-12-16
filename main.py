@@ -7,7 +7,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Conve
 
 from config import TOKEN
 from converter import convert_to_ogg
-from model import MemeStorage, Meme
+from model import SqliteMemeStorage, Meme
 from model.exceptions import Unauthorized
 from utils import download_file, inject_quoted_voice_id
 from custom_filters import IsMeme, IsAudioDocument
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 NAME = 1
 
-meme_storage = MemeStorage('memes')
+meme_storage = SqliteMemeStorage('memes.db')
 
 is_meme = IsMeme(meme_storage)
 is_audio_document = IsAudioDocument()
@@ -34,7 +34,7 @@ def cmd_cancel(bot, update):
 
 def meme_handler(bot, update):
     """Handles known memes, returns their names"""
-    meme = meme_storage.get(update.message.voice.file_id)
+    meme = meme_storage.get_by_file_id(update.message.voice.file_id)
     update.message.reply_text('Name: "{}"'.format(meme.name))
 
 
@@ -67,9 +67,11 @@ def name_handler(bot: Bot, update: Update, user_data):
     file_id = user_data['meme_file_id']
 
     meme = Meme(
+        id=None,  # automatically created by DB
         name=meme_name,
         file_id=file_id,
-        owner_id=message.from_user.id
+        owner_id=message.from_user.id,
+        times_used=0
     )
 
     meme_storage.add(meme)
@@ -85,7 +87,7 @@ def cmd_name(bot, update, quoted_voice_id):
     message = update.message
 
     try:
-        meme = meme_storage.get(quoted_voice_id)
+        meme = meme_storage.get_by_file_id(quoted_voice_id)
     except KeyError:
         message.reply_text("I don't know that meme, sorry.")
         return
@@ -100,13 +102,13 @@ def cmd_delete(bot, update, quoted_voice_id):
     message = update.message
 
     try:
-        meme_name = meme_storage.get(quoted_voice_id).name
+        meme_name = meme_storage.get_by_file_id(quoted_voice_id).name
     except KeyError:
         message.reply_text("I don't know that meme, sorry.")
         return
 
     try:
-        meme_storage.delete(quoted_voice_id, message.from_user.id)
+        meme_storage.delete_by_file_id(quoted_voice_id, message.from_user.id)
     except Unauthorized:
         message.reply_text("Sorry, you can only delete the memes you added yourself.")
         return
@@ -127,13 +129,13 @@ def cmd_rename(bot, update, args, quoted_voice_id):
         return
 
     try:
-        meme = meme_storage.get(quoted_voice_id)
+        meme = meme_storage.get_by_file_id(quoted_voice_id)
     except KeyError:
         message.reply_text("Sorry, I don't know that meme.")
         return
 
     try:
-        meme_storage.rename(meme, new_name, message.from_user.id)
+        meme_storage.rename(meme.id, new_name, message.from_user.id)
     except Unauthorized:
         message.reply_text("Sorry, you can only rename the memes you added yourself.")
         return
@@ -148,13 +150,13 @@ def cmd_fix(bot, update, quoted_voice_id):
     message = update.message
 
     try:
-        meme = meme_storage.get(quoted_voice_id)
+        meme = meme_storage.get_by_file_id(quoted_voice_id)
     except KeyError:
         message.reply_text("Sorry, I don't know that meme.")
         return
 
     try:
-        meme_storage.delete(meme, message.from_user.id)
+        meme_storage.delete_by_file_id(meme.file_id, message.from_user.id)
     except Unauthorized:
         message.reply_text("Sorry, you can only fix the memes you added yourself.")
         return

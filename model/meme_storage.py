@@ -1,5 +1,7 @@
-import shelve
 import logging
+import sqlite3
+from abc import ABC, abstractmethod
+from typing import List
 
 from fuzzywuzzy import fuzz, process
 
@@ -10,45 +12,52 @@ from .exceptions import Unauthorized
 logger = logging.getLogger(__name__)
 
 
-class MemeStorage(object):
+class MemeStorage(ABC):
 
-    def __init__(self, filename):
-        self.memes = shelve.open(filename, writeback=True)
-
+    @abstractmethod
     def add(self, new_meme: Meme):
-        self.memes[new_meme.file_id] = new_meme
-        self.memes.sync()
+        pass
 
-    def delete(self, meme, from_user_id):
-        """Delete a meme by id or a Meme object"""
-        if isinstance(meme, Meme):
-            file_id = meme.file_id
-        else:
-            file_id = meme
+    @abstractmethod
+    def delete_by_file_id(self, file_id, from_user_id):
+        """Delete a meme by file_id or a Meme object"""
+        pass
 
-        if from_user_id != self.memes[file_id].owner_id:
-            raise Unauthorized
+    @abstractmethod
+    def rename(self, meme_id, new_name, from_user_id):
+        pass
 
-        del self.memes[file_id]
-        self.memes.sync()
+    @abstractmethod
+    def get(self, meme_id) -> Meme:
+        """Get a meme by it's id"""
+        pass
 
-    def rename(self, meme, new_name, from_user_id):
-        self.delete(meme, from_user_id)
-        self.add(Meme(
-            name=new_name,
-            file_id=meme.file_id,
-            owner_id=meme.owner_id
-        ))
+    @abstractmethod
+    def get_by_file_id(self, file_id) -> Meme:
+        """Get a meme by it's file_id"""
+        pass
 
-    def __contains__(self, file_id):
-        return file_id in self.memes
+    @abstractmethod
+    def get_all(self) -> List[Meme]:
+        """Returns all memes"""
+        pass
 
-    def find(self, search_query):
-        scored_matches = process.extractBests(search_query, self.get_all(),
-                                              key=lambda meme: meme.name,
-                                              scorer=fuzz.UWRatio,
-                                              limit=None,
-                                              score_cutoff=55)
+    @abstractmethod
+    def inc_times_used(self, meme_id):
+        pass
+
+    @abstractmethod
+    def has_meme_with_file_id(self, file_id) -> bool:
+        pass
+
+    def find(self, search_query: str) -> List[Meme]:
+        scored_matches = process.extractBests(
+            search_query, self.get_all(),
+            key=lambda meme: meme.name,
+            scorer=fuzz.UWRatio,
+            limit=None,
+            score_cutoff=55
+        )
 
         if scored_matches:
             matches, _ = zip(*scored_matches)
@@ -56,12 +65,89 @@ class MemeStorage(object):
         else:
             return []
 
-    def get(self, file_id):
-        """Get a meme by it's file_id"""
 
-        return self.memes[file_id]
+class SqliteMemeStorage(MemeStorage):
 
-    def get_all(self):
-        """Returns all memes"""
+    def __init__(self, filename):
+        self.connection = sqlite3.connect(filename, check_same_thread=False)
+        self.connection.row_factory = sqlite3.Row
 
-        return self.memes.values()
+        self.connection.execute(
+            'CREATE TABLE IF NOT EXISTS memes ('
+            ' id         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'
+            ' file_id    TEXT NOT NULL UNIQUE,'
+            ' name	     TEXT NOT NULL,'
+            ' owner_id   INTEGER NOT NULL,'
+            ' times_used INTEGER NOT NULL DEFAULT 0'
+            ')'
+        )
+
+    def add(self, new_meme: Meme):
+
+        with self.connection:
+            self.connection.execute(
+                'INSERT INTO memes (file_id, name, owner_id, times_used)'
+                ' VALUES (:file_id, :name, :owner_id, :times_used)',
+                new_meme._asdict())
+
+    def delete_by_file_id(self, file_id, from_user_id):
+        if from_user_id != self.get_by_file_id(file_id).owner_id:
+            raise Unauthorized
+
+        with self.connection:
+            self.connection.execute(
+                'DELETE FROM memes '
+                ' WHERE file_id = ?',
+                (file_id,)
+            )
+
+    def rename(self, meme_id, new_name, from_user_id):
+        if from_user_id != self.get(meme_id).owner_id:
+            raise Unauthorized
+
+        with self.connection:
+            self.connection.execute(
+                'UPDATE memes'
+                ' SET name = :new_name'
+                ' WHERE id = :id',
+                {'new_name': new_name, 'id': meme_id}
+            )
+
+    def get(self, meme_id) -> Meme:
+        row = self.connection.execute(
+            'SELECT * FROM memes'
+            ' WHERE id = ?',
+            (meme_id,)
+        ).fetchone()
+        return Meme(**row)
+
+    def get_by_file_id(self, file_id) -> Meme:
+        row = self.connection.execute(
+            'SELECT * FROM memes'
+            ' WHERE file_id = ?',
+            (file_id, )
+        ).fetchone()
+        return Meme(**row)
+
+    def get_all(self) -> List[Meme]:
+        rows = self.connection.execute('SELECT * FROM memes').fetchall()
+        return [Meme(**r) for r in rows]
+
+    def inc_times_used(self, meme_id):
+        with self.connection:
+            self.connection.execute(
+                'UPDATE memes'
+                ' SET times_used = times_used + 1'
+                ' WHERE id = ?',
+                (meme_id,)
+            )
+
+    def has_meme_with_file_id(self, file_id) -> bool:
+        exists_int = self.connection.execute(
+            'SELECT EXISTS('
+            ' SELECT 1 FROM memes'
+            ' WHERE file_id = ?'
+            ')',
+            (file_id,)
+        ).fetchone()  # returns 1 or 0
+        return bool(exists_int)

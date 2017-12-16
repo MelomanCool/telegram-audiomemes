@@ -1,2 +1,2 @@
 from .meme import Meme
-from .meme_storage import MemeStorage
+from .meme_storage import SqliteMemeStorage
