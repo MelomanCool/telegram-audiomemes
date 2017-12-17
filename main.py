@@ -5,7 +5,7 @@ from telegram import Update, Bot, ParseMode, InlineQueryResultCachedVoice
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, InlineQueryHandler, \
     ChosenInlineResultHandler, RegexHandler
 
-from config import TOKEN
+import config
 from converter import convert_to_ogg
 from inline_results_storage import InlineResultsRingBuffer
 from model import SqliteMemeStorage, Meme
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 NAME = 1
 
-meme_storage = SqliteMemeStorage('memes.db')
+meme_storage = SqliteMemeStorage(config.DB_PATH)
 inline_results_by_id = InlineResultsRingBuffer(limit=1000)
 
 is_meme = IsMeme(meme_storage)
@@ -242,7 +242,7 @@ def error_handler(_, update, error):
 
 
 def main():
-    updater = Updater(TOKEN)
+    updater = Updater(config.TOKEN)
 
     dp = updater.dispatcher
 

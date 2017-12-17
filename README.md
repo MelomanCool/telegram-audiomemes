@@ -33,8 +33,11 @@ After cloning the repo, you can install requirements with pip:
 1. Clone this repository:  
    `git clone https://github.com/MelomanCool/telegram-audiomemes.git`
 
-2. Create a `config.py` file containing the api token you got from [@BotFather](https://telegram.me/BotFather):  
-   `TOKEN = "YOUR_TOKEN"`
+2. Create a `config.py` file containing the api token you got from [@BotFather](https://telegram.me/BotFather) and path to database to store memes:
+   ```
+   TOKEN = "YOUR_TOKEN"
+   DB_PATH = "memes.db"
+   ```
 
 3. Run the bot:  
    `python3 main.py`
