@@ -123,6 +123,10 @@ class SqliteMemeStorage(MemeStorage):
             ' WHERE id = ?',
             (meme_id,)
         ).fetchone()
+
+        if row is None:
+            raise KeyError
+
         return Meme(**row)
 
     def get_by_file_id(self, file_id) -> Meme:
@@ -131,6 +135,10 @@ class SqliteMemeStorage(MemeStorage):
             ' WHERE file_id = ?',
             (file_id, )
         ).fetchone()
+
+        if row is None:
+            raise KeyError
+
         return Meme(**row)
 
     def get_most_popular(self, max_count) -> List[Meme]:
