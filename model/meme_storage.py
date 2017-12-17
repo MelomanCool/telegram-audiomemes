@@ -70,7 +70,7 @@ class MemeStorage(ABC):
         pass
 
     @abstractmethod
-    def replace_file_id(self, meme_id, new_file_id, from_user_id):
+    def replace_file_id(self, old_file_id, new_file_id, from_user_id):
         pass
 
     @abstractmethod
