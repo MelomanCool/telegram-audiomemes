@@ -70,6 +70,10 @@ class MemeStorage(ABC):
         pass
 
     @abstractmethod
+    def replace_file_id(self, meme_id, new_file_id, from_user_id):
+        pass
+
+    @abstractmethod
     def has_meme_with_file_id(self, file_id) -> bool:
         pass
 
@@ -199,6 +203,17 @@ class SqliteMemeStorage(MemeStorage):
                 ' WHERE file_id = ?',
                 (file_id,)
             )
+
+    def replace_file_id(self, old_file_id, new_file_id, from_user_id):
+        if from_user_id != self.get_by_file_id(old_file_id).owner_id:
+            raise Unauthorized
+
+        self.connection.execute(
+            'UPDATE memes'
+            ' SET file_id = :new_file_id'
+            ' WHERE file_id = :old_file_id',
+            {'new_file_id': new_file_id, 'old_file_id': old_file_id}
+        )
 
     def has_meme_with_file_id(self, file_id) -> bool:
         row = self.connection.execute(

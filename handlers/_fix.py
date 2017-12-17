@@ -1,7 +1,5 @@
 import model
 from converter import convert_to_ogg
-from model import Meme
-from model.exceptions import Unauthorized
 from utils import inject_quoted_voice_id, download_file
 
 import logzero
@@ -23,24 +21,14 @@ def fix(bot, update, quoted_voice_id):
         message.reply_text("Sorry, I don't know that meme.")
         return
 
-    try:
-        meme_storage.delete_by_file_id(meme.file_id, message.from_user.id)
-    except Unauthorized:
+    if meme.owner_id != update.message.from_user.id:
         message.reply_text("Sorry, you can only fix the memes you added yourself.")
         return
 
-    try:
-        audio_file = download_file(bot, quoted_voice_id)
-        fixed_file = convert_to_ogg(audio_file)
-        response = message.reply_voice(fixed_file)
-        fixed_file_id = response.voice.file_id
-        meme_storage.add(Meme(
-            name=meme.name,
-            file_id=fixed_file_id,
-            owner_id=meme.owner_id
-        ))
+    audio_file = download_file(bot, quoted_voice_id)
+    fixed_file = convert_to_ogg(audio_file)
+    response = message.reply_voice(fixed_file)
+    fixed_file_id = response.voice.file_id
+    meme_storage.replace_file_id(quoted_voice_id, fixed_file_id, message.from_user.id)
 
-        message.reply_text('The meme has been fixed')
-
-    except Exception as e:
-        logger.exception(e)
+    message.reply_text('The meme has been fixed')
