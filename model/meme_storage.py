@@ -5,11 +5,22 @@ from typing import List
 
 from fuzzywuzzy import fuzz, process
 
+import config
 from .meme import Meme
 from .exceptions import Unauthorized
 
 
 logger = logging.getLogger(__name__)
+
+
+_storage = None
+
+
+def get_storage():
+    global _storage
+    if not _storage:
+        _storage = SqliteMemeStorage(config.DB_PATH)
+    return _storage
 
 
 class MemeStorage(ABC):

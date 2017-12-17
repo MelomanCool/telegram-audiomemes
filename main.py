@@ -8,7 +8,8 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Conve
 import config
 from converter import convert_to_ogg
 from inline_results_storage import InlineResultsRingBuffer
-from model import SqliteMemeStorage, Meme
+import model
+from model import Meme
 from model.exceptions import Unauthorized
 from utils import download_file, inject_quoted_voice_id
 from custom_filters import IsMeme, IsAudioDocument
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 NAME = 1
 
-meme_storage = SqliteMemeStorage(config.DB_PATH)
+meme_storage = model.get_storage()
 inline_results_by_id = InlineResultsRingBuffer(limit=1000)
 
 is_meme = IsMeme(meme_storage)
