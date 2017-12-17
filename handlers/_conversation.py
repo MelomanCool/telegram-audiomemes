@@ -1,4 +1,4 @@
-from enum import Enum, auto
+from enum import Enum
 
 from telegram.ext import ConversationHandler, MessageHandler, Filters, CommandHandler
 
@@ -9,8 +9,7 @@ from model import Meme
 from utils import download_file
 
 
-class States(Enum):
-    NAME = auto()
+States = Enum('States', 'NAME')
 
 
 meme_storage = model.get_storage()
