@@ -156,11 +156,12 @@ class SqliteMemeStorage(MemeStorage):
             )
 
     def has_meme_with_file_id(self, file_id) -> bool:
-        exists_int = self.connection.execute(
+        row = self.connection.execute(
             'SELECT EXISTS('
             ' SELECT 1 FROM memes'
             ' WHERE file_id = ?'
             ')',
             (file_id,)
-        ).fetchone()  # returns 1 or 0
-        return bool(exists_int)
+        ).fetchone()
+        exists = list(row)[0]  # returns 1 or 0
+        return bool(exists)
