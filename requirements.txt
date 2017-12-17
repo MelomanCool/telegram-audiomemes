@@ -1,3 +1,4 @@
-python-telegram-bot==7.0.1
-pydub==0.20.0
+logzero
+python-telegram-bot
+pydub
 git+git://github.com/MelomanCool/fuzzywuzzy.git#egg=fuzzywuzzy
