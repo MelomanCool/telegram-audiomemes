@@ -69,7 +69,7 @@ class MemeStorage(ABC):
 
         if scored_matches:
             matches, _ = zip(*scored_matches)
-            return matches
+            return matches[-max_count:]
         else:
             return []
 
