@@ -42,7 +42,7 @@ class MemeStorage(ABC):
         pass
 
     @abstractmethod
-    def get_all(self) -> List[Meme]:
+    def get_many(self, max_count) -> List[Meme]:
         """Returns all memes"""
         pass
 
@@ -54,9 +54,9 @@ class MemeStorage(ABC):
     def has_meme_with_file_id(self, file_id) -> bool:
         pass
 
-    def find(self, search_query: str) -> List[Meme]:
+    def find(self, search_query: str, max_count) -> List[Meme]:
         scored_matches = process.extractBests(
-            search_query, self.get_all(),
+            search_query, self.get_many(max_count),
             key=lambda meme: meme.name,
             scorer=fuzz.UWRatio,
             limit=None,
@@ -150,8 +150,12 @@ class SqliteMemeStorage(MemeStorage):
         ).fetchall()
         return [Meme(**r) for r in rows]
 
-    def get_all(self) -> List[Meme]:
-        rows = self.connection.execute('SELECT * FROM memes').fetchall()
+    def get_many(self, max_count) -> List[Meme]:
+        rows = self.connection.execute(
+            'SELECT * FROM memes'
+            ' LIMIT ?',
+            (max_count,)
+        ).fetchall()
         return [Meme(**r) for r in rows]
 
     def inc_times_used(self, meme_id):

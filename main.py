@@ -1,12 +1,13 @@
 import logging
 from uuid import uuid4
-from itertools import islice
 
 from telegram import Update, Message, Bot, ParseMode, InlineQueryResultCachedVoice
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, InlineQueryHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, InlineQueryHandler, \
+    ChosenInlineResultHandler
 
 from config import TOKEN
 from converter import convert_to_ogg
+from inline_results_storage import InlineResultsRingBuffer
 from model import SqliteMemeStorage, Meme
 from model.exceptions import Unauthorized
 from utils import download_file, inject_quoted_voice_id
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 NAME = 1
 
 meme_storage = SqliteMemeStorage('memes.db')
+inline_results_by_id = InlineResultsRingBuffer(limit=1000)
 
 is_meme = IsMeme(meme_storage)
 is_audio_document = IsAudioDocument()
@@ -179,17 +181,29 @@ def inlinequery(bot, update):
     logger.info('Inline query: %s', query)
 
     if query:
-        memes = meme_storage.find(query)
+        memes = meme_storage.find(query, max_count=10)
     else:
-        memes = meme_storage.get_all()
+        memes = meme_storage.get_most_popular(max_count=10)
 
-    memes = islice(memes, 10)
-    results = [
-        InlineQueryResultCachedVoice(uuid4(), meme.file_id, title=meme.name)
-        for meme in memes
-    ]
+    results = []
+    for meme in memes:
+        id_ = uuid4()
+        results.append(InlineQueryResultCachedVoice(
+            id_, meme.file_id, title=meme.name
+        ))
+        inline_results_by_id.add(str(id_), meme.id)
 
     update.inline_query.answer(results, cache_time=0)
+
+
+def chosen_inline_result(bot, update: Update):
+    try:
+        meme_id = inline_results_by_id.get(update.chosen_inline_result.result_id)
+    except KeyError:
+        logger.warning("Can't find result in cache. You should increase cache size.")
+        return
+
+    meme_storage.inc_times_used(meme_id)
 
 
 def error_handler(bot, update, error):
@@ -226,6 +240,7 @@ def main():
     dp.add_handler(CommandHandler('rename', cmd_rename, pass_args=True))
     dp.add_handler(CommandHandler('fix', cmd_fix))
     dp.add_handler(InlineQueryHandler(inlinequery))
+    dp.add_handler(ChosenInlineResultHandler(chosen_inline_result))
 
     dp.add_error_handler(error_handler)
 
