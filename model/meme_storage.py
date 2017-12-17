@@ -43,11 +43,15 @@ class MemeStorage(ABC):
 
     @abstractmethod
     def get_many(self, max_count) -> List[Meme]:
+        pass
+
+    @abstractmethod
+    def get_all(self):
         """Returns all memes"""
         pass
 
     @abstractmethod
-    def inc_times_used(self, meme_id):
+    def inc_times_used(self, file_id):
         pass
 
     @abstractmethod
@@ -56,7 +60,7 @@ class MemeStorage(ABC):
 
     def find(self, search_query: str, max_count) -> List[Meme]:
         scored_matches = process.extractBests(
-            search_query, self.get_many(max_count),
+            search_query, self.get_all(),
             key=lambda meme: meme.name,
             scorer=fuzz.UWRatio,
             limit=None,
@@ -158,13 +162,17 @@ class SqliteMemeStorage(MemeStorage):
         ).fetchall()
         return [Meme(**r) for r in rows]
 
-    def inc_times_used(self, meme_id):
+    def get_all(self):
+        rows = self.connection.execute('SELECT * FROM memes').fetchall()
+        return [Meme(**r) for r in rows]
+
+    def inc_times_used(self, file_id):
         with self.connection:
             self.connection.execute(
                 'UPDATE memes'
                 ' SET times_used = times_used + 1'
-                ' WHERE id = ?',
-                (meme_id,)
+                ' WHERE file_id = ?',
+                (file_id,)
             )
 
     def has_meme_with_file_id(self, file_id) -> bool:

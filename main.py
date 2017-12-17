@@ -191,19 +191,20 @@ def inlinequery(_, update):
         results.append(InlineQueryResultCachedVoice(
             id_, meme.file_id, title=meme.name
         ))
-        inline_results_by_id.add(str(id_), meme.id)
+        inline_results_by_id.add(str(id_), meme.file_id,
+                                 update.inline_query.from_user.id)
 
     update.inline_query.answer(results, cache_time=0)
 
 
 def chosen_inline_result(_, update: Update):
     try:
-        meme_id = inline_results_by_id.get(update.chosen_inline_result.result_id)
+        file_id = inline_results_by_id.get(update.chosen_inline_result.result_id)
     except KeyError:
         logger.warning("Can't find result in cache. You should increase cache size.")
         return
 
-    meme_storage.inc_times_used(meme_id)
+    meme_storage.inc_times_used(file_id)
 
 
 def error_handler(_, update, error):
