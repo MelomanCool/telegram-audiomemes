@@ -38,6 +38,10 @@ class MemeStorage(ABC):
         pass
 
     @abstractmethod
+    def get_most_popular(self, max_count) -> List[Meme]:
+        pass
+
+    @abstractmethod
     def get_all(self) -> List[Meme]:
         """Returns all memes"""
         pass
@@ -128,6 +132,15 @@ class SqliteMemeStorage(MemeStorage):
             (file_id, )
         ).fetchone()
         return Meme(**row)
+
+    def get_most_popular(self, max_count) -> List[Meme]:
+        rows = self.connection.execute(
+            'SELECT * FROM memes'
+            ' ORDER BY times_used DESC'
+            ' LIMIT ?',
+            (max_count,)
+        ).fetchall()
+        return [Meme(**r) for r in rows]
 
     def get_all(self) -> List[Meme]:
         rows = self.connection.execute('SELECT * FROM memes').fetchall()
