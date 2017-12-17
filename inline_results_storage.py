@@ -12,7 +12,7 @@ class InlineResultsRingBuffer(object):
                 id TEXT PRIMARY KEY,
                 meme_id INTEGER
             );
-            
+
             -- Number 10 on where statement defines the ring buffer's size
             CREATE TRIGGER delete_tail AFTER INSERT ON inline_results
             BEGIN

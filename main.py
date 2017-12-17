@@ -1,7 +1,7 @@
 import logging
 from uuid import uuid4
 
-from telegram import Update, Message, Bot, ParseMode, InlineQueryResultCachedVoice
+from telegram import Update, Bot, ParseMode, InlineQueryResultCachedVoice
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, InlineQueryHandler, \
     ChosenInlineResultHandler
 
@@ -28,13 +28,13 @@ is_meme = IsMeme(meme_storage)
 is_audio_document = IsAudioDocument()
 
 
-def cmd_cancel(bot, update):
+def cmd_cancel(_, update):
     update.message.reply_text('Current operation has been canceled.')
 
     return ConversationHandler.END
 
 
-def meme_handler(bot, update):
+def meme_handler(_, update):
     """Handles known memes, returns their names"""
     meme = meme_storage.get_by_file_id(update.message.voice.file_id)
     update.message.reply_text('Name: "{}"'.format(meme.name))
@@ -62,7 +62,7 @@ def audio_handler(bot: Bot, update: Update, user_data):
     return NAME
 
 
-def name_handler(bot: Bot, update: Update, user_data):
+def name_handler(_, update: Update, user_data):
     message = update.message
 
     meme_name = message.text.strip()
@@ -83,7 +83,7 @@ def name_handler(bot: Bot, update: Update, user_data):
 
 
 @inject_quoted_voice_id
-def cmd_name(bot, update, quoted_voice_id):
+def cmd_name(_, update, quoted_voice_id):
     """Returns the name of a meme"""
 
     message = update.message
@@ -98,7 +98,7 @@ def cmd_name(bot, update, quoted_voice_id):
 
 
 @inject_quoted_voice_id
-def cmd_delete(bot, update, quoted_voice_id):
+def cmd_delete(_, update, quoted_voice_id):
     """Deletes a meme by voice file"""
 
     message = update.message
@@ -119,7 +119,7 @@ def cmd_delete(bot, update, quoted_voice_id):
 
 
 @inject_quoted_voice_id
-def cmd_rename(bot, update, args, quoted_voice_id):
+def cmd_rename(_, update, args, quoted_voice_id):
     """Changes the name of the meme"""
 
     message = update.message
@@ -176,7 +176,7 @@ def cmd_fix(bot, update, quoted_voice_id):
     message.reply_text('The meme has been fixed')
 
 
-def inlinequery(bot, update):
+def inlinequery(_, update):
     query = update.inline_query.query
     logger.info('Inline query: %s', query)
 
@@ -196,7 +196,7 @@ def inlinequery(bot, update):
     update.inline_query.answer(results, cache_time=0)
 
 
-def chosen_inline_result(bot, update: Update):
+def chosen_inline_result(_, update: Update):
     try:
         meme_id = inline_results_by_id.get(update.chosen_inline_result.result_id)
     except KeyError:
@@ -206,7 +206,7 @@ def chosen_inline_result(bot, update: Update):
     meme_storage.inc_times_used(meme_id)
 
 
-def error_handler(bot, update, error):
+def error_handler(_, update, error):
     logger.warning('Update "%s" caused error "%s"', update, error)
 
 
