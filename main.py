@@ -181,9 +181,9 @@ def inlinequery(_, update):
     logger.info('Inline query: %s', query)
 
     if query:
-        memes = meme_storage.find(query, max_count=10)
+        memes = meme_storage.find(query, max_count=20)
     else:
-        memes = meme_storage.get_most_popular(max_count=10)
+        memes = meme_storage.get_most_popular(max_count=20)
 
     results = []
     for meme in memes:
