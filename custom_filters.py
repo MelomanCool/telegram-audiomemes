@@ -1,8 +1,10 @@
 from telegram.ext import BaseFilter
 from pathlib import Path
 
+import model
 
-class IsMeme(BaseFilter):
+
+class IsInDatabase(BaseFilter):
     def __init__(self, storage):
         self.storage = storage
 
@@ -17,3 +19,7 @@ class IsAudioDocument(BaseFilter):
     def filter(self, message):
         return (message.document is not None
                 and Path(message.document.file_name).suffix in self.EXTENSIONS)
+
+
+is_audio_document = IsAudioDocument()
+is_in_database = IsInDatabase(storage=model.get_storage())
