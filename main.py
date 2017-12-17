@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from telegram import Update, Bot, ParseMode, InlineQueryResultCachedVoice
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, InlineQueryHandler, \
-    ChosenInlineResultHandler
+    ChosenInlineResultHandler, RegexHandler
 
 from config import TOKEN
 from converter import convert_to_ogg
@@ -176,6 +176,36 @@ def cmd_fix(bot, update, quoted_voice_id):
     message.reply_text('The meme has been fixed')
 
 
+def cmd_my(_, update):
+    """Prints memes added by user"""
+
+    message = update.message
+    user_id = update.message.from_user.id
+
+    memes = meme_storage.get_for_owner(user_id, max_count=20)
+
+    text = '\n\n'.join(
+        '<b>{meme.name}</b>\n'
+        'Times used: {meme.times_used}\n'
+        '/{meme.id}'
+        .format(meme=meme)
+        for meme in memes
+    )
+    message.reply_text(text, parse_mode='HTML')
+
+
+def cmd_get_by_id(_, update, groupdict):
+    """Sends meme by id"""
+
+    try:
+        meme = meme_storage.get(groupdict['id'])
+    except KeyError:
+        update.message.reply_text("I don't have meme with that ID, sorry")
+        return
+
+    update.message.reply_voice(meme.file_id)
+
+
 def inlinequery(_, update):
     query = update.inline_query.query
     logger.info('Inline query: %s', query)
@@ -240,6 +270,8 @@ def main():
     dp.add_handler(CommandHandler('delete', cmd_delete))
     dp.add_handler(CommandHandler('rename', cmd_rename, pass_args=True))
     dp.add_handler(CommandHandler('fix', cmd_fix))
+    dp.add_handler(CommandHandler('my', cmd_my))
+    dp.add_handler(RegexHandler('/(?P<id>\d+)', cmd_get_by_id, pass_groupdict=True))
     dp.add_handler(InlineQueryHandler(inlinequery))
     dp.add_handler(ChosenInlineResultHandler(chosen_inline_result))
 

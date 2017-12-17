@@ -38,6 +38,10 @@ class MemeStorage(ABC):
         pass
 
     @abstractmethod
+    def get_for_owner(self, owner_id, max_count) -> List[Meme]:
+        pass
+
+    @abstractmethod
     def get_most_popular(self, max_count) -> List[Meme]:
         pass
 
@@ -144,6 +148,16 @@ class SqliteMemeStorage(MemeStorage):
             raise KeyError
 
         return Meme(**row)
+
+    def get_for_owner(self, owner_id, max_count) -> List[Meme]:
+        rows = self.connection.execute(
+            'SELECT * FROM memes'
+            ' WHERE owner_id = :owner_id'
+            ' LIMIT :max_count',
+            {'owner_id': owner_id, 'max_count': max_count}
+        )
+
+        return [Meme(**r) for r in rows]
 
     def get_most_popular(self, max_count) -> List[Meme]:
         rows = self.connection.execute(
