@@ -66,7 +66,7 @@ class MemeStorage(ABC):
         pass
 
     @abstractmethod
-    def inc_times_used(self, file_id):
+    def inc_times_used(self, meme_id):
         pass
 
     @abstractmethod
@@ -195,13 +195,13 @@ class SqliteMemeStorage(MemeStorage):
         rows = self.connection.execute('SELECT * FROM memes').fetchall()
         return [Meme(**r) for r in rows]
 
-    def inc_times_used(self, file_id):
+    def inc_times_used(self, meme_id):
         with self.connection:
             self.connection.execute(
                 'UPDATE memes'
                 ' SET times_used = times_used + 1'
-                ' WHERE file_id = ?',
-                (file_id,)
+                ' WHERE id = ?',
+                (meme_id,)
             )
 
     def replace_file_id(self, old_file_id, new_file_id, from_user_id):
