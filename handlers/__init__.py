@@ -7,3 +7,4 @@ from ._fix import fix
 from ._get_by_id import get_by_id
 from ._my import my
 from ._rename import rename
+from ._help import help_

@@ -30,6 +30,7 @@ def main():
     dp.add_handler(CommandHandler('rename', handlers.rename, pass_args=True))
     dp.add_handler(CommandHandler('fix', handlers.fix))
     dp.add_handler(CommandHandler('my', handlers.my))
+    dp.add_handler(CommandHandler(['start', 'help'], handlers.help_))
     dp.add_handler(RegexHandler('/(?P<id>\d+)', handlers.get_by_id, pass_groupdict=True))
     dp.add_handler(InlineQueryHandler(handlers.inlinequery))
     dp.add_handler(ChosenInlineResultHandler(handlers.chosen_inline_result))
