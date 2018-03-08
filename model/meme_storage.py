@@ -53,7 +53,7 @@ class MemeStorage(ABC):
         pass
 
     @abstractmethod
-    def get_most_popular(self, max_count) -> List[Meme]:
+    def get_most_popular(self) -> List[Meme]:
         pass
 
     @abstractmethod
@@ -77,7 +77,7 @@ class MemeStorage(ABC):
     def has_meme_with_file_id(self, file_id) -> bool:
         pass
 
-    def find(self, search_query: str, max_count) -> List[Meme]:
+    def find(self, search_query: str) -> List[Meme]:
         scored_matches = process.extractBests(
             search_query, self.get_all(),
             key=lambda meme: meme.name,
@@ -88,7 +88,7 @@ class MemeStorage(ABC):
 
         if scored_matches:
             matches, _ = zip(*scored_matches)
-            return matches[-max_count:]
+            return matches
         else:
             return []
 
@@ -174,12 +174,10 @@ class SqliteMemeStorage(MemeStorage):
 
         return [Meme(**r) for r in rows]
 
-    def get_most_popular(self, max_count) -> List[Meme]:
+    def get_most_popular(self) -> List[Meme]:
         rows = self.connection.execute(
             'SELECT * FROM memes'
             ' ORDER BY times_used DESC'
-            ' LIMIT ?',
-            (max_count,)
         ).fetchall()
         return [Meme(**r) for r in rows]
 
