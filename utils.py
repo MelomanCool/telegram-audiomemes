@@ -19,3 +19,10 @@ def inject_quoted_voice_id(func):
             return
         return func(bot, update, *args, quoted_voice_id=quoted_message.voice.file_id, **kwargs)
     return wrapped
+
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l.
+    https://stackoverflow.com/a/312464/6879054"""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]

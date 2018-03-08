@@ -49,7 +49,7 @@ class MemeStorage(ABC):
         pass
 
     @abstractmethod
-    def get_for_owner(self, owner_id, max_count) -> List[Meme]:
+    def get_for_owner(self, owner_id) -> List[Meme]:
         pass
 
     @abstractmethod
@@ -164,13 +164,12 @@ class SqliteMemeStorage(MemeStorage):
 
         return Meme(**row)
 
-    def get_for_owner(self, owner_id, max_count) -> List[Meme]:
+    def get_for_owner(self, owner_id) -> List[Meme]:
         rows = self.connection.execute(
             'SELECT * FROM memes'
-            ' WHERE owner_id = :owner_id'
-            ' LIMIT :max_count',
-            {'owner_id': owner_id, 'max_count': max_count}
-        )
+            ' WHERE owner_id = ?',
+            (owner_id,)
+        ).fetchall()
 
         return [Meme(**r) for r in rows]
 
