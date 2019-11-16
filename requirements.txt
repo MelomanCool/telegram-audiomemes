@@ -1,4 +1,4 @@
 logzero
 python-telegram-bot
-pydub
+pydub==0.23.1
 git+git://github.com/MelomanCool/fuzzywuzzy.git#egg=fuzzywuzzy
